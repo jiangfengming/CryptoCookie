@@ -1,6 +1,6 @@
 {
   "name": "crypto-cookie",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "cryptoCookie",
   "main": "cryptoCookie.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/fenivana/cryptoCookie.git"
+    "url": "https://github.com/fenivana/crypto-cookie.git"
   },
   "keywords": [
     "crypto",
@@ -17,7 +17,7 @@
   "author": "Jiang Fengming <jfm@noindoin.com>",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/fenivana/cryptoCookie/issues"
+    "url": "https://github.com/fenivana/crypto-cookie/issues"
   },
-  "homepage": "https://github.com/fenivana/cryptoCookie"
+  "homepage": "https://github.com/fenivana/crypto-cookie"
 }

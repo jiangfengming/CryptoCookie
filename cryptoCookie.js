@@ -87,4 +87,11 @@ cryptoCookie.prototype.get = function(name, encrypted) {
 	}
 };
 
+cryptoCookie.prototype.delete = function(name, opts) {
+	if (!opts)
+		opts = {};
+	opts.expires = 1;
+	this.set(name, '', opts);
+};
+
 module.exports = cryptoCookie;

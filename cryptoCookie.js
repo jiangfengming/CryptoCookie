@@ -43,9 +43,9 @@ cryptoCookie.prototype.set = function(name, value, opts) {
 
 	if (opts.expires) {
 		var expires;
-		if (opts.expires instanceof Date)
+		if (opts.expires.constructor == Date)
 			expires = opts.expires.toUTCString();
-		else if (opts.expires instanceof Number)
+		else if (opts.expires.constructor == Number)
 			expires = new Date(opts.expires).toUTCString();
 		else
 			expires = opts.expires;

@@ -46,9 +46,9 @@ cryptoCookie.prototype.set = function(name, value, opts) {
 
   var cookie = encodeURIComponent(name) + '=' + encodeURIComponent(value);
 
-  if (opts.maxAge)
+  if (opts.maxAge != undefined)
     cookie += '; max-age=' + opts.maxAge;
-  if (opts.expires)
+  if (opts.expires !=  undefined)
     cookie += '; expires=' + opts.expires.constructor == Date ? opts.expires.toUTCString() : new Date(opts.expires).toUTCString();
   if (opts.path)
     cookie += '; path=' + opts.path;

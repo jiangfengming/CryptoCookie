@@ -36,7 +36,7 @@ cryptoCookie.prototype.set = function(name, value, opts) {
   if (opts.encrypt) {
     var key = this.keys[0];
 
-    name = crypto.createHmac('md5', key).update(name).digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    name = crypto.createHmac('sha256', key).update(name).digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 
     var iv = crypto.randomBytes(this.ivSize / 8);
     var cip = crypto.createCipheriv(this.algorithm, key, iv);
@@ -71,8 +71,7 @@ cryptoCookie.prototype.get = function(name, encrypted) {
 
   for (var i = 0; i < this.keys.length; i++) {
     var key = this.keys[i];
-    var n = crypto.createHmac('md5', key).update(name).digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    n = decodeURIComponent(n);
+    var n = crypto.createHmac('sha256', key).update(name).digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     if (this.reqCookies[n]) {
       try {
         var data = this.reqCookies[n];

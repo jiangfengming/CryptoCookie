@@ -1,18 +1,19 @@
 crypto-cookie
 ============
 
-```
+```js
 var cryptoCookie = require('crypto-cookie');
 var crypto = require('crypto');
 
-var cookie = new cryptoCookie(req, res, {
+var cookie = new CryptoCookie(req, res, [{
   algorithm: 'aes-256-cfb',
   ivSize: 128,
-  keys: [
-    crypto.pbkdf2Sync('pASsWoRD', 'SaLt', 4096, 32),
-    crypto.pbkdf2Sync('OlDpaSSwoRd', 'sAlt', 4096, 32)
-  ], // ['current Key', 'old Key', ...]
-});
+  key: crypto.pbkdf2Sync('pASsWoRD', 'SaLt', 4096, 32)
+}, {
+  algorithm: 'aes-256-cfb',
+  ivSize: 128,
+  key: crypto.pbkdf2Sync('OlDpaSSwoRd', 'sAlt', 4096, 32)
+}]);
 
 // all cookies
 console.log(cookie.reqCookies);

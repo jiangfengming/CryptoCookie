@@ -1,27 +1,14 @@
-/*!
- * CryptoCookie.js
- * http://www.noindoin.com/
- *
- * Copyright 2014 Jiang Fengming <fenix@noindoin.com>
- * Released under the MIT license
- */
-
 var crypto = require('crypto');
 
-function CryptoCookie(req, res, ciphers) {
-  if (!ciphers)
-    ciphers = [];
-  else if (ciphers.constructor == Object)
-    ciphers = [ciphers];
-
+function CryptoCookie(req, res, opts) {
   this.req = req;
   this.res = res;
-  this.ciphers = ciphers;
+  this.opts = opts || {};
   this.resCookies = [];
   this.reqCookies = {};
 
   if (req.headers.cookie) {
-    var cookies = req.headers.cookie.split('; ');
+    var cookies = req.headers.cookie.split(/;\s*/);
     for (var i = cookies.length - 1; i >= 0; i--) {
       var c = cookies[i].split('=');
       this.reqCookies[decodeURIComponent(c[0])] = decodeURIComponent(c[1]);
@@ -29,65 +16,93 @@ function CryptoCookie(req, res, ciphers) {
   }
 }
 
-CryptoCookie.prototype.set = function(name, value, opts) {
-  if (!opts)
-    opts = {};
+CryptoCookie.prototype.set = function(name, value, _opts) {
+  if (!_opts)
+    _opts = {};
 
-  if (opts.encrypt) {
-    var cipher = this.ciphers[0];
-    name = crypto.createHmac('sha256', cipher.key).update(name).digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    value = new Buffer(String(value));
-    var checksum = crypto.createHash('sha256').update(value).digest();
-    value = Buffer.concat([checksum, value]);
-    var iv = crypto.randomBytes(cipher.ivSize / 8);
-    var cip = crypto.createCipheriv(cipher.algorithm, cipher.key, iv);
-    value = Buffer.concat([iv, cip.update(value), cip.final()]).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  var opts = {};
+  for (var k in this.opts)
+    opts[k] = this.opts[k];
+  for (k in _opts)
+    opts[k] = _opts[k];
+
+  value = String(value);
+
+  if (opts.signed) {
+    var key = this.opts.keys[0];
+    value += base64url.encode(crypto.createHmac('sha224', key).update(value).digest());
+  } else if (opts.encrypted) {
+    key = this.opts.keys[0];
+    name = base64url.encode(crypto.createHmac('sha224', key).update(name).digest());
+    value = new Buffer(value);
+    var iv = crypto.randomBytes(12);
+    var cip = crypto.createCipheriv('aes-256-gcm', key, iv);
+    value = base64url.encode(Buffer.concat([cip.update(value), cip.final(), cip.getAuthTag(), iv]));
   }
 
   var cookie = encodeURIComponent(name) + '=' + encodeURIComponent(value);
 
   if (opts.maxAge != undefined)
-    cookie += '; max-age=' + opts.maxAge;
+    cookie += '; Max-Age=' + opts.maxAge;
   if (opts.expires !=  undefined)
-    cookie += '; expires=' + opts.expires.constructor == Date ? opts.expires.toUTCString() : new Date(opts.expires).toUTCString();
+    cookie += '; Expires=' + (opts.expires.constructor == Date ? opts.expires.toUTCString() : new Date(opts.expires).toUTCString());
   if (opts.path)
-    cookie += '; path=' + opts.path;
+    cookie += '; Path=' + opts.path;
   if (opts.domain)
-    cookie += '; domain=' + opts.domain;
+    cookie += '; Domain=' + opts.domain;
   if (opts.secure)
-    cookie += '; secure';
-  if (opts.httponly)
-    cookie += '; httponly';
+    cookie += '; Secure';
+  if (opts.httpOnly)
+    cookie += '; HttpOnly';
 
   this.resCookies.push(cookie);
-  this.reqCookies[name] = value;
+
+  if (opts.maxAge == 0)
+    delete this.reqCookies[name];
+  else
+    this.reqCookies[name] = value;
   this.res.setHeader('Set-Cookie', this.resCookies);
   return this;
 };
 
-CryptoCookie.prototype.get = function(name, encrypted) {
-  if (!encrypted)
-    return this.reqCookies[name];
+CryptoCookie.prototype.get = function(name, opts) {
+  if (!opts)
+    opts = {};
 
-  try {
-    for (var i = 0; i < this.ciphers.length; i++) {
-      var cipher = this.ciphers[i];
-      var n = crypto.createHmac('sha256', cipher.key).update(name).digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-      if (this.reqCookies[n]) {
-        var data = new Buffer(this.reqCookies[n].replace(/-/g, '+').replace(/_/g, '/'), 'base64');
-        var ivSize = cipher.ivSize / 8;
-        var iv = data.slice(0, ivSize);
-        data = data.slice(ivSize);
-        var decip = crypto.createDecipheriv(cipher.algorithm, cipher.key, iv);
-        data = Buffer.concat([decip.update(data), decip.final()]);
-        var checksum = data.slice(0, 32);
-        data = data.slice(32);
-        return checksum.equals(crypto.createHash('sha256').update(data).digest()) ? data.toString() : undefined;
-      }
+  if (opts.signed) {
+    var value = this.reqCookies[name];
+    if (!value)
+      return undefined;
+    var sig = base64url.decode(value.slice(-38));
+    value = value.slice(0, -38);
+    for (var i = 0; i < this.opts.keys.length; i++) {
+      var key = this.opts.keys[i];
+      if (crypto.createHmac('sha224', key).update(value).digest().equals(sig))
+        return value;
     }
-  } catch (e) {
     return undefined;
+  } else if (opts.encrypted) {
+    try {
+      for (var i = 0; i < this.opts.keys.length; i++) {
+        var key = this.opts.keys[i];
+        var n = base64url.encode(crypto.createHmac('sha224', key).update(name).digest());
+        if (this.reqCookies[n]) {
+          var data = base64url.decode(this.reqCookies[n]);
+          var iv = data.slice(-12);
+          var tag = data.slice(-28, -12);
+          data = data.slice(0, -28);
+          var decip = crypto.createDecipheriv('aes-256-gcm', key, iv);
+          decip.setAuthTag(tag);
+          return Buffer.concat([decip.update(data), decip.final()]).toString();
+        }
+      }
+      return undefined;
+    } catch (e) {
+      return undefined;
+    }
   }
+
+  return this.reqCookies[name];
 };
 
 CryptoCookie.prototype.remove = function(name, opts) {
@@ -95,8 +110,17 @@ CryptoCookie.prototype.remove = function(name, opts) {
     opts = {};
   opts.maxAge = 0;
   this.set(name, '', opts);
-  delete this.reqCookies[name];
   return this;
+};
+
+var base64url = {
+  encode: function(buf) {
+    return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  },
+
+  decode: function(str) {
+    return new Buffer(str.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+  }
 };
 
 module.exports = CryptoCookie;

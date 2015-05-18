@@ -1,10 +1,10 @@
 {
   "name": "crypto-cookie",
-  "version": "0.3.0",
-  "description": "Crypto Cookie",
+  "version": "0.4.0",
+  "description": "Get and set cookies with crypto",
   "main": "CryptoCookie.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test.js"
   },
   "repository": {
     "type": "git",
@@ -14,10 +14,13 @@
     "crypto",
     "cookie"
   ],
-  "author": "Jiang Fengming <fenix@noindoin.com>",
-  "license": "ISC",
+  "author": "Jiang Fengming <fenix@noindoin.com> (http://www.noindoin.com/)",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/fenivana/crypto-cookie/issues"
   },
-  "homepage": "https://github.com/fenivana/crypto-cookie"
+  "homepage": "https://github.com/fenivana/crypto-cookie",
+  "devDependencies": {
+    "supertest": "^0.15.0"
+  }
 }

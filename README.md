@@ -1,8 +1,8 @@
-# crypto-cookie
+# CryptoCookie
 
 ## Usage
 ```js
-var cryptoCookie = require('crypto-cookie');
+var CryptoCookie = require('crypto-cookie');
 
 // create a cookie object
 var cookie = new CryptoCookie(req, res);
